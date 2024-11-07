@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include"wr3Tool.h"
+#include"../R3Tools/wr3Tool.h"
+#include<memory>
 class CKvRemoteInjectToolsDlg : public CDialogEx
 {
 public:
@@ -32,4 +33,5 @@ public:
 	afx_msg void OnBnClicked_SelectDll();
 	afx_msg void OnCbnDropdownCombo1();
 	afx_msg void OnClose();
+	afx_msg void ViewCurrentModule();
 };

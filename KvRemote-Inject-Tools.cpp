@@ -1,7 +1,7 @@
-﻿#include "pch.h"
-#include "framework.h"
+﻿#include <pch.h>
+#include <framework.h>
 #include "KvRemote-Inject-Tools.h"
-#include "KvRemote-Inject-ToolsDlg.h"
+#include "Dialogs/KvRemote-Inject-ToolsDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

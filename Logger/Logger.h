@@ -4,7 +4,6 @@
 #include <ctime>
 #include <string>
 #include <vector>
-
 class Logger {
 private:
     static std::string logMessages;

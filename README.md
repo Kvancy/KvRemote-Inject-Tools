@@ -11,19 +11,19 @@ KvRemote-Inject-Tools是在Windows平台上的注入工具，可以方便快捷�
 3. 支持进程枚举，点击选择进程（可识别中文进程）
 4. 可修复ZwVirtualProtectMemory hook，用于特定进程hook了自身的ZwVirtualProtectMemory函数的情况
 5. 注入配置保存，添加config.ini文件支持配置在关闭时保存，下次打开自动填充。
+6. 枚举目标进程所有模块，可以判断是否注入成功
 
 
 
 # 效果图
 
-![image-20241101013559894](./imgs/README/image-20241101013559894.png)
+![image-20241107200803017](../imgs/README/image-20241107200803017.png)
 
-![image-20241101013610430](./imgs/README/image-20241101013610430.png)
+![image-20241107200926929](../imgs/README/image-20241107200926929.png)
 
 # TODO
 
-1. 注入状态显示
-2. 多次注入支持
-3. 枚举目标进程当前所有模块
-4. 卸载目标进程的已注入的模块
-5. 驱动层注入
+1. 多dll注入支持
+2. 延迟注入
+3. 卸载目标进程的已注入的模块
+4. 驱动层注入

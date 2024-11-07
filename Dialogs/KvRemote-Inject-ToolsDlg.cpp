@@ -1,9 +1,9 @@
-﻿#include "pch.h"
-#include "framework.h"
-#include "KvRemote-Inject-Tools.h"
+﻿#include <pch.h>
+#include <framework.h>
+#include "../KvRemote-Inject-Tools.h"
 #include "KvRemote-Inject-ToolsDlg.h"
 #include "afxdialogex.h"
-
+#include "CurrentModulesDlg.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -60,6 +60,7 @@ BEGIN_MESSAGE_MAP(CKvRemoteInjectToolsDlg, CDialogEx)
 	ON_CBN_DROPDOWN(IDC_COMBO1, &CKvRemoteInjectToolsDlg::OnCbnDropdownCombo1)
 	ON_WM_CANCELMODE()
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON3, &CKvRemoteInjectToolsDlg::ViewCurrentModule)
 END_MESSAGE_MAP()
 
 
@@ -135,8 +136,6 @@ HCURSOR CKvRemoteInjectToolsDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
-
 
 bool CKvRemoteInjectToolsDlg::WriteToIni(const CString& key, const CString& value, const CString& section, const CString& iniFilePath)
 {
@@ -225,7 +224,6 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 	return;
 }
 
-
 void CKvRemoteInjectToolsDlg::OnBnClicked_SelectDll()
 {
 	CString filter = _T("Dll Files (*.dll)|*.dll|All Files (*.*)|*.*||");
@@ -242,7 +240,6 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_SelectDll()
 	CEDIT_DllPath.SetWindowTextA(filePath);
 	UpdateData(FALSE);
 }
-
 
 void CKvRemoteInjectToolsDlg::OnCbnDropdownCombo1()
 {
@@ -265,9 +262,6 @@ void CKvRemoteInjectToolsDlg::OnCbnDropdownCombo1()
 	}
 }
 
-
-
-
 void CKvRemoteInjectToolsDlg::OnClose()
 {
 	CString value;
@@ -285,4 +279,19 @@ void CKvRemoteInjectToolsDlg::OnClose()
 	WriteToIni(KeyIsRepairVPM, value);
 
 	CDialogEx::OnClose();
+}
+
+void CKvRemoteInjectToolsDlg::ViewCurrentModule()
+{
+	CString selectedText;
+	CCombox_ProcList.GetWindowTextA(selectedText);
+	int pos = selectedText.Find(_T('-'));
+	int pid = 0;
+	if (pos != -1)
+	{
+		selectedText = selectedText.Mid(pos + 1);
+		pid = _ttoi(selectedText);
+	}
+	CurrentModulesDlg* dlg = new CurrentModulesDlg(pid);
+	dlg->DoModal();
 }
