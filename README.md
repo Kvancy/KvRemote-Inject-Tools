@@ -17,9 +17,9 @@ KvRemote-Inject-Tools是在Windows平台上的注入工具，可以方便快捷�
 
 # 效果图
 
-![image-20241107200803017](../imgs/README/image-20241107200803017.png)
+![image-20241107200803017](./imgs/README/image-20241107200803017.png)
 
-![image-20241107200926929](../imgs/README/image-20241107200926929.png)
+![image-20241107200926929](./imgs/README/image-20241107200926929.png)
 
 # TODO
 
