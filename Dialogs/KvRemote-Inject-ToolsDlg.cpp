@@ -22,6 +22,7 @@ public:
 
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
@@ -49,6 +50,10 @@ void CKvRemoteInjectToolsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT1, CEDIT_DllPath);
 	DDX_Control(pDX, IDC_COMBO1, CCombox_ProcList);
 	DDX_Control(pDX, IDC_CHECK1, Check_IsRepairVPM);
+	DDX_Control(pDX, IDC_RADIO1, Radio_Exist);
+	DDX_Control(pDX, IDC_RADIO2, Radio_New);
+	DDX_Control(pDX, IDC_BUTTON2, CButton_Inject);
+	DDX_Control(pDX, IDC_EDIT2, CEDIT_DelayTime);
 }
 
 BEGIN_MESSAGE_MAP(CKvRemoteInjectToolsDlg, CDialogEx)
@@ -61,6 +66,8 @@ BEGIN_MESSAGE_MAP(CKvRemoteInjectToolsDlg, CDialogEx)
 	ON_WM_CANCELMODE()
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON3, &CKvRemoteInjectToolsDlg::ViewCurrentModule)
+	ON_BN_CLICKED(IDC_RADIO2, &CKvRemoteInjectToolsDlg::OnBnClickedRadioNew)
+	ON_BN_CLICKED(IDC_RADIO1, &CKvRemoteInjectToolsDlg::OnBnClickedRadioExist)
 END_MESSAGE_MAP()
 
 
@@ -155,9 +162,33 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 	UpdateData(TRUE);
 	CString dllBuffer;
 	CEDIT_DllPath.GetWindowTextA(dllBuffer);
+	HANDLE hProcess = 0;
+	int sleepTime = 2000;
 	if (dllBuffer.IsEmpty()) {
 		MessageBox("请选择dll文件");
 		return;
+	}
+	if (Radio_New.GetCheck() == BST_CHECKED)
+	{
+		CString exePath;
+		CCombox_ProcList.GetWindowTextA(exePath);
+		STARTUPINFO si;
+		PROCESS_INFORMATION pi;
+
+		ZeroMemory(&si, sizeof(si));
+		si.cb = sizeof(si);
+		ZeroMemory(&pi, sizeof(pi));
+
+		if (!CreateProcess(exePath.GetBuffer(),NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+		{
+			int d = GetLastError();
+			MessageBox("启动进程失败,请检查进程路径和所有权限");
+			return;
+		}
+		CString tmp;
+		CEDIT_DelayTime.GetWindowTextA(tmp);
+		sleepTime = StrToInt(tmp.GetBuffer());
+		hProcess = pi.hProcess;
 	}
 	int dllPathLen = dllBuffer.GetLength();
 	char* dllPath = dllBuffer.GetBuffer();
@@ -184,24 +215,27 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 		return;
 	}
 
-	//格式化字符串获取到pid
-	CString selectedText;
-	CCombox_ProcList.GetWindowTextA(selectedText);
-	int pos = selectedText.Find(_T('-'));
-	int pid = 0;
-	if (pos != -1)
-	{
-		selectedText = selectedText.Mid(pos + 1);
-		pid = _ttoi(selectedText);
-	}
-	//获取进程句柄
-	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	//如果是注入已存在的进程，查找进程句柄
 	if (!hProcess)
 	{
-		MessageBox("进程句柄打开失败，请确认进程存在或者权限足够");
-		return;
+		//格式化字符串获取到pid
+		CString selectedText;
+		CCombox_ProcList.GetWindowTextA(selectedText);
+		int pos = selectedText.Find(_T('-'));
+		int pid = 0;
+		if (pos != -1)
+		{
+			selectedText = selectedText.Mid(pos + 1);
+			pid = _ttoi(selectedText);
+		}
+		hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		if (!hProcess)
+		{
+			MessageBox("进程句柄打开失败，请确认进程存在或者权限足够");
+			return;
+		}
 	}
-
+	Sleep(sleepTime);
 	//选中修复VirtualProtect
 	if (Check_IsRepairVPM.GetCheck())
 	{
@@ -220,6 +254,7 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 	else
 	{
 		MessageBox("注入成功!");
+		//
 	}
 	return;
 }
@@ -291,7 +326,43 @@ void CKvRemoteInjectToolsDlg::ViewCurrentModule()
 	{
 		selectedText = selectedText.Mid(pos + 1);
 		pid = _ttoi(selectedText);
+		CurrentModulesDlg* dlg = new CurrentModulesDlg(pid);
+		dlg->DoModal();
 	}
-	CurrentModulesDlg* dlg = new CurrentModulesDlg(pid);
-	dlg->DoModal();
+	else
+	{
+		MessageBox("没有找到进程PID");
+		return;
+	}
+	
+}
+
+
+void CKvRemoteInjectToolsDlg::OnBnClickedRadioNew()
+{
+	CCombox_ProcList.EnableWindow(false);
+	CEDIT_DelayTime.EnableWindow(true);
+	CEDIT_DelayTime.SetWindowTextA("2000");
+	CString filter = _T("EXE Files (*.exe)|*.exe|All Files (*.*)|*.*||");
+	CFileDialog dlg(true, _T(""), _T(""), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, filter);
+	if (dlg.DoModal() == IDCANCEL) {
+		return;
+	}
+	CString filePath = dlg.GetPathName();
+	if (filePath.Right(4).CompareNoCase(_T(".exe")) != 0)
+	{
+		AfxMessageBox(_T("请选择要启动的进程"));
+		return;
+	}
+	CCombox_ProcList.SetWindowTextA(filePath);
+	CButton_Inject.SetWindowTextA("启动并注入");
+	UpdateData(FALSE);
+}
+
+
+
+void CKvRemoteInjectToolsDlg::OnBnClickedRadioExist()
+{
+	CEDIT_DelayTime.EnableWindow(false);
+	CCombox_ProcList.EnableWindow(true);
 }

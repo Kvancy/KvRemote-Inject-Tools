@@ -27,6 +27,10 @@ public:
 	CString KeyDllPath{ _T("dllpath") };
 	CString KeyProcName{ _T("procName") };
 	CString KeyIsRepairVPM{ _T("isRepairVPM") };
+	CButton Radio_Exist;
+	CButton Radio_New;
+	CButton CButton_Inject;
+	CEdit CEDIT_DelayTime;
 	static bool WriteToIni(const CString& key, const CString& value, const CString& section = _T("Settings"), const CString& iniFilePath = _T(".\\config.ini"));
 	static CString ReadFromIni(const CString& key, const CString& defaultValue = _T(""), const CString& section = _T("Settings"), const CString& iniFilePath = _T(".\\config.ini"));;
 	afx_msg void OnBnClicked_Inject();
@@ -34,4 +38,7 @@ public:
 	afx_msg void OnCbnDropdownCombo1();
 	afx_msg void OnClose();
 	afx_msg void ViewCurrentModule();
+
+	afx_msg void OnBnClickedRadioNew();
+	afx_msg void OnBnClickedRadioExist();
 };
