@@ -2,7 +2,9 @@
 #include<Windows.h>
 #include<iostream>
 #include<TlHelp32.h>
-#include <ntstatus.h>
+#include<ntstatus.h>
+typedef LONG (NTAPI* pNtTestAlert)(VOID);
+
 namespace wr3Tool
 {
     static DWORD64 GetModuleBase(DWORD64 pid, const char* ModuleName)//采用多字节编码
@@ -65,9 +67,8 @@ namespace wr3Tool
         return 0;
     }
     
-    static BOOL InjectDll(HANDLE hProcess, LPCSTR dllPath) {
+    static BOOL RemoteThreadInjectDll(HANDLE hProcess, LPCSTR dllPath) {
 
-        // 在目标进程中分配内存
         LPVOID pRemoteDllPath = VirtualAllocEx(hProcess, NULL, strlen(dllPath) + 1, MEM_COMMIT, PAGE_READWRITE);
         if (pRemoteDllPath == NULL) {
             int e = GetLastError();
@@ -75,25 +76,20 @@ namespace wr3Tool
             return FALSE;
         }
 
-        // 将DLL路径写入目标进程的内存
         if (!WriteProcessMemory(hProcess, pRemoteDllPath, dllPath, strlen(dllPath) + 1, NULL)) {
             printf("WriteProcessMemory Failed:[%d]\n", GetLastError());
             VirtualFreeEx(hProcess, pRemoteDllPath, 0, MEM_RELEASE);
             return FALSE;
         }
 
-        // 获取LoadLibraryA函数的地址
         LPTHREAD_START_ROUTINE lpLoadLibrary = (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
 
-        // 创建远程线程执行LoadLibrary
         HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, lpLoadLibrary, pRemoteDllPath, 0, NULL);
         if (hThread == NULL) {
             printf("CreateRemoteThread Failed:[%d]\n", GetLastError());
             VirtualFreeEx(hProcess, pRemoteDllPath, 0, MEM_RELEASE);
             return FALSE;
         }
-
-        // 等待远程线程执行完成
         WaitForSingleObject(hThread, INFINITE);
 
         CloseHandle(hThread);
@@ -101,7 +97,81 @@ namespace wr3Tool
 
         return TRUE;
     }
+    //必须在目标线程处于可警告状态，SleepEx(...,1),wait...等函数
+    static BOOL ApcInjectDll(HANDLE hProcess, LPCSTR dllPath) {
+        if (hProcess == NULL || dllPath == NULL) {
+            std::cerr << "Invalid input parameters." << std::endl;
+            return FALSE;
+        }
 
+        FARPROC loadLibraryAddr = GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
+        if (loadLibraryAddr == NULL) {
+            std::cerr << "Failed to get the address of LoadLibraryA. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        SIZE_T dllPathLen = strlen(dllPath) + 1;
+
+        LPVOID remoteDllPath = VirtualAllocEx(hProcess, NULL, dllPathLen, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+        if (remoteDllPath == NULL) {
+            std::cerr << "Failed to allocate memory in the target process. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        if (!WriteProcessMemory(hProcess, remoteDllPath, dllPath, dllPathLen, NULL)) {
+            std::cerr << "Failed to write DLL path to the target process. Error code: " << GetLastError() << std::endl;
+            VirtualFreeEx(hProcess, remoteDllPath, 0, MEM_RELEASE);
+            return FALSE;
+        }
+
+        HANDLE hThreadSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        if (hThreadSnapshot == INVALID_HANDLE_VALUE) {
+            std::cerr << "Failed to create thread snapshot. Error code: " << GetLastError() << std::endl;
+            VirtualFreeEx(hProcess, remoteDllPath, 0, MEM_RELEASE);
+            return FALSE;
+        }
+
+        THREADENTRY32 threadEntry;
+        threadEntry.dwSize = sizeof(THREADENTRY32);
+
+        if (Thread32First(hThreadSnapshot, &threadEntry)) {
+            do {
+                if (threadEntry.th32OwnerProcessID == GetProcessId(hProcess)) {
+                    HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
+                    if (hThread != NULL) {
+                        QueueUserAPC((PAPCFUNC)loadLibraryAddr, hThread, (ULONG_PTR)remoteDllPath);//用户层只需要该函数APC注入
+                        CloseHandle(hThread);
+                    }
+                }
+            } while (Thread32Next(hThreadSnapshot, &threadEntry));
+        }
+
+        CloseHandle(hThreadSnapshot);
+        VirtualFreeEx(hProcess, remoteDllPath, 0, MEM_RELEASE);
+
+        return TRUE;
+    }
+
+    static BOOL ReflectiveInjectDll(HANDLE hProcess, BYTE* shellCode,DWORD size) {
+        //BYTE shellCode[] = {0x31, 0xC0, 0x40, 0x83, 0xC0, 0x02, 0xEB, 0xFA};
+        LPVOID shellCodeAddr = VirtualAllocEx(hProcess, NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        if (shellCodeAddr == NULL) {
+            std::cerr << "Failed to allocate memory in the target process. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        if (!WriteProcessMemory(hProcess, shellCodeAddr, shellCode, size, NULL)) {
+            std::cerr << "Failed to write shellcode to the target process. Error code: " << GetLastError() << std::endl;
+            VirtualFreeEx(hProcess, shellCodeAddr, 0, MEM_RELEASE);
+            return FALSE;
+        }
+        HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)shellCodeAddr, NULL, 0, NULL);
+        if (hThread == NULL) return FALSE;
+        CloseHandle(hThread);
+        return TRUE;
+    }
+
+    
     static BOOL RepairVirtualProtect(HANDLE hProcess)//修复ntProtectVirtualMemory hook
     {
         //计算ZwProtectVirtualMemory函数在模块内的偏移
@@ -135,6 +205,26 @@ namespace wr3Tool
         return TRUE;
     }
 
+    static BOOL EnableDebugPrivilege() {
+        HANDLE hToken;
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+            return FALSE;
+
+        TOKEN_PRIVILEGES tp;
+        LUID luid;
+        if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid))
+            return FALSE;
+
+        tp.PrivilegeCount = 1;
+        tp.Privileges[0].Luid = luid;
+        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+        if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL))
+            return FALSE;
+
+        CloseHandle(hToken);
+        return TRUE;
+    }
 
 }
 

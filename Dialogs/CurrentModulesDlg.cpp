@@ -1,7 +1,7 @@
 ﻿#include <pch.h>
 #include <TlHelp32.h>
 #include <vector>
-#include "../KvRemote-Inject-Tools.h"
+#include "../App/KvRemote-Inject-Tools.h"
 #include "CurrentModulesDlg.h"
 
 

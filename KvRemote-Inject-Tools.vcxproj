@@ -29,8 +29,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -44,7 +44,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
@@ -76,11 +76,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>C:\Users\15386\Desktop\VS_shell\KvProject\KvRemote-Inject-Tools\KvRemote-Inject-Tools\Common;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>E:\back\desktop\VS_shell\KvProject\KvRemote-Inject-Tools\KvRemote-Inject-Tools\Common;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <ExternalIncludePath>C:\Users\15386\Desktop\VS_shell\KvProject\KvRemote-Inject-Tools\KvRemote-Inject-Tools\Common;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>E:\back\desktop\VS_shell\KvProject\KvRemote-Inject-Tools\KvRemote-Inject-Tools\Common;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -131,7 +131,7 @@
     <ResourceCompile>
       <Culture>0x0804</Culture>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);E:\back\desktop\VS_shell\KvProject\KvRemote-Inject-Tools\KvRemote-Inject-Tools\res;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -189,9 +189,9 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="App\KvRemote-Inject-Tools.h" />
     <ClInclude Include="Dialogs\CurrentModulesDlg.h" />
     <ClInclude Include="Common\framework.h" />
-    <ClInclude Include="KvRemote-Inject-Tools.h" />
     <ClInclude Include="Dialogs\KvRemote-Inject-ToolsDlg.h" />
     <ClInclude Include="Logger\Logger.h" />
     <ClInclude Include="Common\pch.h" />
@@ -200,8 +200,8 @@
     <ClInclude Include="R3Tools\wr3Tool.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="App\KvRemote-Inject-Tools.cpp" />
     <ClCompile Include="Dialogs\CurrentModulesDlg.cpp" />
-    <ClCompile Include="KvRemote-Inject-Tools.cpp" />
     <ClCompile Include="Dialogs\KvRemote-Inject-ToolsDlg.cpp" />
     <ClCompile Include="Logger\Logger.cpp" />
     <ClCompile Include="Common\pch.cpp">
@@ -212,13 +212,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="KvRemoteInjectTools.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="res\KvRemoteInjectTools.rc2" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\KvRemote-Inject-Tools.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\KvRemoteInjectTools.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Logger\Logger.cpp">
+      <Filter>Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialogs\KvRemote-Inject-ToolsDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialogs\CurrentModulesDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\pch.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="App\KvRemote-Inject-Tools.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="R3Tools\wr3Tool.h">
+      <Filter>R3Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger\Logger.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialogs\KvRemote-Inject-ToolsDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialogs\CurrentModulesDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\framework.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\targetver.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\Resource.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\pch.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="App\KvRemote-Inject-Tools.h">
+      <Filter>App</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>{da68b229-2443-43f1-b7ff-2518213ce3b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dialogs">
+      <UniqueIdentifier>{0212b01a-635d-4f27-91cd-22f49944c5aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{1613b21a-0a62-4f1d-b93f-e039c75dc742}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="R3Tools">
+      <UniqueIdentifier>{2d1c34f5-a2d5-4577-8848-a6d8c576af65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{aedde899-2a2d-4873-bda2-d61d04a4a302}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="App">
+      <UniqueIdentifier>{1272a8b6-6d61-4afa-b458-2f6e3bf716e1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\KvRemoteInjectTools.rc2">
+      <Filter>res</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\KvRemote-Inject-Tools.ico">
+      <Filter>res</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\KvRemoteInjectTools.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

@@ -1,6 +1,6 @@
 ﻿#include <pch.h>
 #include <framework.h>
-#include "../KvRemote-Inject-Tools.h"
+#include "../App/KvRemote-Inject-Tools.h"
 #include "KvRemote-Inject-ToolsDlg.h"
 #include "afxdialogex.h"
 #include "CurrentModulesDlg.h"
@@ -54,6 +54,10 @@ void CKvRemoteInjectToolsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_RADIO2, Radio_New);
 	DDX_Control(pDX, IDC_BUTTON2, CButton_Inject);
 	DDX_Control(pDX, IDC_EDIT2, CEDIT_DelayTime);
+	DDX_Control(pDX, IDC_RADIO3, Radio_RemoteInject);
+	DDX_Control(pDX, IDC_RADIO4, Radio_ApcInject);
+	DDX_Control(pDX, IDC_RADIO5, Radio_ReflectiveInject);
+	DDX_Control(pDX, IDC_EDIT3, CEDIT_ShellCode);
 }
 
 BEGIN_MESSAGE_MAP(CKvRemoteInjectToolsDlg, CDialogEx)
@@ -68,6 +72,9 @@ BEGIN_MESSAGE_MAP(CKvRemoteInjectToolsDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON3, &CKvRemoteInjectToolsDlg::ViewCurrentModule)
 	ON_BN_CLICKED(IDC_RADIO2, &CKvRemoteInjectToolsDlg::OnBnClickedRadioNew)
 	ON_BN_CLICKED(IDC_RADIO1, &CKvRemoteInjectToolsDlg::OnBnClickedRadioExist)
+	ON_BN_CLICKED(IDC_RADIO3, &CKvRemoteInjectToolsDlg::OnBnClickedRadio3)
+	ON_BN_CLICKED(IDC_RADIO4, &CKvRemoteInjectToolsDlg::OnBnClickedRadioApc)
+	ON_BN_CLICKED(IDC_RADIO5, &CKvRemoteInjectToolsDlg::OnBnClickedRadioReflective)
 END_MESSAGE_MAP()
 
 
@@ -92,10 +99,14 @@ BOOL CKvRemoteInjectToolsDlg::OnInitDialog()
 		}
 	}
 	//初始化配置，跟上次关闭保持一致状态
+	CEDIT_ShellCode.SetWindowTextA("0x90,0x90");
 	CEDIT_DllPath.SetWindowTextA(ReadFromIni(KeyDllPath));
 	CCombox_ProcList.SetWindowTextA(ReadFromIni(KeyProcName));
 	Check_IsRepairVPM.SetCheck(ReadFromIni(KeyIsRepairVPM) == _T("true"));
-
+	Radio_RemoteInject.SetCheck(ReadFromIni(KeyRemoteInject) == _T("true"));
+	Radio_ApcInject.SetCheck(ReadFromIni(KeyApcInject) == _T("true"));
+	Radio_ReflectiveInject.SetCheck(ReadFromIni(KeyReflectiveInject) == _T("true"));
+	Radio_Exist.SetCheck(true);
 	SetIcon(m_hIcon, TRUE);			
 	SetIcon(m_hIcon, FALSE);		
 
@@ -162,6 +173,8 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 	UpdateData(TRUE);
 	CString dllBuffer;
 	CEDIT_DllPath.GetWindowTextA(dllBuffer);
+	CString shellCodeBuffer;
+	CEDIT_ShellCode.GetWindowTextA(shellCodeBuffer);
 	HANDLE hProcess = 0;
 	int sleepTime = 2000;
 	if (dllBuffer.IsEmpty()) {
@@ -174,10 +187,10 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 		CCombox_ProcList.GetWindowTextA(exePath);
 		STARTUPINFO si;
 		PROCESS_INFORMATION pi;
-
-		ZeroMemory(&si, sizeof(si));
-		si.cb = sizeof(si);
 		ZeroMemory(&pi, sizeof(pi));
+		ZeroMemory(&si, sizeof(si));
+
+		si.cb = sizeof(si);
 
 		if (!CreateProcess(exePath.GetBuffer(),NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 		{
@@ -193,27 +206,8 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 	int dllPathLen = dllBuffer.GetLength();
 	char* dllPath = dllBuffer.GetBuffer();
 	dllPath[dllPathLen] = 0;
-	CString strMsg;
-	HANDLE hToken;
-	if (FALSE == OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken)) {
-		MessageBox("打开进程令牌失败");
-		return;
-	}
 
-	LUID luid;
-	if (FALSE == LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid)) {
-		MessageBox("查询进程特权信息失败");
-		return;
-	}
-
-	TOKEN_PRIVILEGES tkp;
-	tkp.PrivilegeCount = 1;
-	tkp.Privileges[0].Luid = luid;
-	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-	if (FALSE == AdjustTokenPrivileges(hToken, FALSE, &tkp, sizeof(tkp), NULL, NULL)) {
-		MessageBox("令牌权限提升失败");
-		return;
-	}
+	wr3Tool::EnableDebugPrivilege();
 
 	//如果是注入已存在的进程，查找进程句柄
 	if (!hProcess)
@@ -236,6 +230,7 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 		}
 	}
 	Sleep(sleepTime);
+
 	//选中修复VirtualProtect
 	if (Check_IsRepairVPM.GetCheck())
 	{
@@ -245,16 +240,52 @@ void CKvRemoteInjectToolsDlg::OnBnClicked_Inject()
 			return;
 		}
 	}
-	
-	if (!wr3Tool::InjectDll(hProcess, dllPath))
+	if (Radio_RemoteInject.GetCheck() == BST_CHECKED)
 	{
-		MessageBox("注入失败，调试程序获取更多信息");
-		return;
+		if (!wr3Tool::RemoteThreadInjectDll(hProcess, dllPath))
+		{
+			MessageBox("注入失败，调试程序获取更多信息");
+			return;
+		}
+		else
+		{
+			MessageBox("注入成功!");
+		}
 	}
-	else
+	else if (Radio_ApcInject.GetCheck() == BST_CHECKED)
 	{
-		MessageBox("注入成功!");
-		//
+		if (!wr3Tool::ApcInjectDll(hProcess, dllPath))
+		{
+			MessageBox("注入失败，调试程序获取更多信息");
+			return;
+		}
+		else
+		{
+			MessageBox("注入成功!");
+		}
+	}
+	else if (Radio_ReflectiveInject.GetCheck() == BST_CHECKED)
+	{
+		if(shellCodeBuffer.IsEmpty() == TRUE) {
+			MessageBox("请输入需要注入的ShellCode");
+			return;
+		}
+		BYTE* shellCode = new BYTE[1024];
+		DWORD size = 0;
+		if (!transCString2ByteArray(shellCodeBuffer, shellCode,&size)) {
+			MessageBox("ShellCode格式错误");
+			return;
+		}
+		if (!wr3Tool::ReflectiveInjectDll(hProcess, shellCode,size))
+		{
+			MessageBox("注入失败，调试程序获取更多信息");
+			return;
+		}
+		else
+		{
+			delete shellCode;
+			MessageBox("注入成功!");
+		}
 	}
 	return;
 }
@@ -312,7 +343,9 @@ void CKvRemoteInjectToolsDlg::OnClose()
 		value = _T("false");
 
 	WriteToIni(KeyIsRepairVPM, value);
-
+	WriteToIni(KeyRemoteInject, Radio_RemoteInject.GetCheck() == true ? _T("true"):_T("false"));
+	WriteToIni(KeyApcInject, Radio_ApcInject.GetCheck() == true ? _T("true"):_T("false"));
+	WriteToIni(KeyReflectiveInject, Radio_ReflectiveInject.GetCheck() == true ? _T("true"):_T("false"));
 	CDialogEx::OnClose();
 }
 
@@ -335,6 +368,42 @@ void CKvRemoteInjectToolsDlg::ViewCurrentModule()
 		return;
 	}
 	
+}
+
+BOOL CKvRemoteInjectToolsDlg::transCString2ByteArray(CString cs, BYTE* retByteArray, DWORD* size) {
+	CStringArray arrParts;
+	CByteArray byteArray;
+
+	int pos = 0;
+	CString token;
+	while ((token = cs.Tokenize(",", pos)) != "") {
+		arrParts.Add(token);
+	}
+
+	for (int i = 0; i < arrParts.GetCount(); i++) {
+		CString part = arrParts[i];
+		part.Trim();
+
+		BYTE byteVal;
+		// 使用%02hhX匹配BYTE类型
+		if (_stscanf_s(part, _T("0x%02hhX"), &byteVal) == 1) {
+			byteArray.Add(byteVal);
+		}
+		else {
+			AfxMessageBox(_T("ShellCode格式错误: ") + part);
+			return FALSE;
+		}
+	}
+
+	*size = byteArray.GetCount();
+
+	if (retByteArray == NULL || *size == 0) {
+		return FALSE;
+	}
+
+	memcpy(retByteArray, byteArray.GetData(), *size);
+
+	return TRUE;
 }
 
 
@@ -365,4 +434,26 @@ void CKvRemoteInjectToolsDlg::OnBnClickedRadioExist()
 {
 	CEDIT_DelayTime.EnableWindow(false);
 	CCombox_ProcList.EnableWindow(true);
+}
+
+void CKvRemoteInjectToolsDlg::OnBnClickedRadio3()
+{
+	CEDIT_DelayTime.EnableWindow(false);
+	CCombox_ProcList.EnableWindow(true);
+	CEDIT_ShellCode.EnableWindow(false);
+}
+
+void CKvRemoteInjectToolsDlg::OnBnClickedRadioApc()
+{
+	CEDIT_DelayTime.EnableWindow(false);
+	CCombox_ProcList.EnableWindow(true);
+	CEDIT_ShellCode.EnableWindow(false);
+}
+
+void CKvRemoteInjectToolsDlg::OnBnClickedRadioReflective()
+{
+	CEDIT_DelayTime.EnableWindow(false);
+	CCombox_ProcList.EnableWindow(true);
+	CEDIT_ShellCode.EnableWindow(true);
+
 }
